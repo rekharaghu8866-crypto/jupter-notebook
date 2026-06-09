@@ -1,0 +1,64 @@
+# Cell 1: Imports
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, classification_report
+
+# Cell 2: Load data
+df = pd.read_csv('../data/employee_data.csv')
+print(df.shape)
+df.head()
+
+# Cell 3: Data Cleaning
+df = df.drop(['EmployeeNumber', 'EmployeeCount', 'StandardHours', 'Over18'], axis=1)
+df['Attrition'] = df['Attrition'].map({'Yes': 1, 'No': 0})
+
+# Cell 4: EDA - Attrition Distribution
+plt.figure(figsize=(6,4))
+sns.countplot(x='Attrition', data=df)
+plt.title('Attrition Distribution')
+plt.savefig('../images/attrition_dist.png')
+plt.show()
+
+# Cell 5: Correlation Heatmap
+plt.figure(figsize=(12,10))
+corr = df.corr(numeric_only=True)
+sns.heatmap(corr, annot=False, cmap='coolwarm')
+plt.title('Correlation Heatmap')
+plt.savefig('../images/correlation_heatmap.png')
+plt.show()
+
+# Cell 6: Encode categorical
+df_encoded = pd.get_dummies(df, drop_first=True)
+
+# Cell 7: Train-Test Split
+X = df_encoded.drop('Attrition', axis=1)
+y = df_encoded['Attrition']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Cell 8: Model Training
+models = {
+    'Logistic Regression': LogisticRegression(max_iter=1000),
+    'Decision Tree': DecisionTreeClassifier(random_state=42),
+    'Random Forest': RandomForestClassifier(n_estimators=100, random_state=42)
+}
+
+for name, model in models.items():
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    acc = accuracy_score(y_test, y_pred)
+    print(f"{name} Accuracy: {acc:.4f}")
+
+# Cell 9: Feature Importance
+rf = RandomForestClassifier(n_estimators=100, random_state=42)
+rf.fit(X_train, y_train)
+feat_imp = pd.Series(rf.feature_importances_, index=X.columns).sort_values(ascending=False).head(10)
+feat_imp.plot(kind='barh', figsize=(8,6))
+plt.title('Top 10 Features for Attrition')
+plt.savefig('../images/feature_importance.png')
+plt.show()
